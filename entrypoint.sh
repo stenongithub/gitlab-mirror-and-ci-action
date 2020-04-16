@@ -18,13 +18,14 @@ sh -c "git push mirror $branch"
 
 sleep $POLL_TIMEOUT
 
-GITLAB_RESPONSE=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch}")
-pipeline_id=$($GITLAB_RESPONSE | jq '.last_pipeline.id')
+pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch}" | jq '.last_pipeline.id')
 
 if [ -z "${pipeline_id}" ]; then
     echo "pipeline_id is ${pipeline_id}, so we can't continue."
-    echo "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch} response was:"
-    echo $GITLAB_RESPONSE
+    echo "Response from https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch} was:"
+    echo $(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch}")
+    exit 1
+
     exit 1
 fi
 
