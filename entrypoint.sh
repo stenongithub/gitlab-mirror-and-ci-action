@@ -20,8 +20,9 @@ sleep $POLL_TIMEOUT
 
 pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch}" | jq '.last_pipeline.id')
 
-if [ -z "${pipeline_id}" ]; then
-    echo "pipeline_id is missing, so we can't continue."
+if [ "${pipeline_id}" = "null" ]
+then
+    echo "pipeline_id is null, so we can't continue."
     echo "Response from https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch} was:"
     echo $(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch}")
     exit 1
