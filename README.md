@@ -34,13 +34,19 @@ Be sure to define the `GITLAB_PASSWORD` secret.
 
 ## Changelog
 
-0.2.1 (2020-04-16)
+0.2.3 (2020-05-07)
 ------------------
 
-This Github Action will now also reuturn "failure" if the Gitlab CI status
-is neither "success" nor "failure".
+Force-push from Github to Gitlab to ignore changes that only
+happened in Gitlab and to allow rebasing.
 
 0.2.2 (2020-04-17)
 ------------------
 
 Print debug information if Gitlab CI doesn't return a Pipeline ID.
+
+0.2.1 (2020-04-16)
+------------------
+
+This Github Action will now also return "failure" if the Gitlab CI status
+is neither "success" nor "failure".
