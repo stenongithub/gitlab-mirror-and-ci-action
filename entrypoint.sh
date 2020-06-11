@@ -1,13 +1,29 @@
 #!/bin/sh
 
 set -u
+##################################################################
+urlencode() (
+    # copied from https://gist.github.com/cdown/1163649
+    length="${#1}"
+    for (( i = 0; i < length; i++ )); do
+        c="${1:i:1}"
+        case $c in
+            [a-zA-Z0-9.~_-])
+		printf "$c" ;;
+            *)
+		printf '%%%02X' "'$c" ;;
+        esac
+    done
+)
 
+##################################################################
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
 git checkout "${GITHUB_REF:11}"
 
-branch=$(git symbolic-ref --short HEAD)
+branch="$(git symbolic-ref --short HEAD)"
+branch_uri="$(urlencode '${branch}')"
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
 sh -c "git config --global core.askPass /cred-helper.sh"
@@ -18,13 +34,13 @@ sh -c "git push mirror $branch --force"
 
 sleep $POLL_TIMEOUT
 
-pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch}" | jq '.last_pipeline.id')
+pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri}" | jq '.last_pipeline.id')
 
 if [ "${pipeline_id}" = "null" ]
 then
     echo "pipeline_id is null, so we can't continue."
-    echo "Response from https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch} was:"
-    echo $(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch}")
+    echo "Response from https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri} was:"
+    echo $(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri}")
     exit 1
 fi
 
