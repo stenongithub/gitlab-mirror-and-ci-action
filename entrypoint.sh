@@ -13,7 +13,7 @@ urlencode() (
             *)
 		printf '%%%02X' "'$c" ;;
         esac
-	i=$(( i + 1 ))
+        i=$(( i + 1 ))
     done
 )
 
