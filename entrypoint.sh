@@ -4,8 +4,9 @@ set -u
 ##################################################################
 urlencode() (
     # copied from https://gist.github.com/cdown/1163649
-    length="${#1}"
-    for (( i = 0; i < length; i++ )); do
+    i=0
+    max_i=${#1}			# length of $1
+    while test $i -lt $max_i; do
         c="${1:i:1}"
         case $c in
             [a-zA-Z0-9.~_-])
