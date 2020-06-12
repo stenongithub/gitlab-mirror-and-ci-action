@@ -34,8 +34,8 @@ Be sure to define the `GITLAB_PASSWORD` secret.
 
 ## Changelog
 
-0.2.4 (TBA)
------------
+0.2.4 (2020-06-12)
+------------------
 
 Added url-encoding of branch names when retrieving their CI status
 from gitlab.
