@@ -34,7 +34,12 @@ Be sure to define the `GITLAB_PASSWORD` secret.
 
 ## Changelog
 
-0.2.4 (TBA)
+0.2.5 (2020-06-30)
+------------------
+
+Untriggered manual stages won't break CI.
+
+0.2.4 (2020-6-12)
 -----------
 
 Added url-encoding of branch names when retrieving their CI status
