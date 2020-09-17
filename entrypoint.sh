@@ -21,7 +21,13 @@ urlencode() (
 DEFAULT_POLL_TIMEOUT=30
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
+sh -c "git config --global credential.username $GITLAB_USERNAME"
+sh -c "git config --global core.askPass /cred-helper.sh"
+sh -c "git config --global credential.helper cache"
+sh -c "git remote add mirror $*"
+
 ## check if this was a tag push and react accordingly
+
 if [ "${GITHUB_REF::11}" = "refs/heads/" ]
 then
   git checkout "${GITHUB_REF:11}"
@@ -37,10 +43,6 @@ else
   pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/trigger/pipeline?ref=${GITHUB_REF:10}" | jq '.last_pipeline.id')
 fi
 
-sh -c "git config --global credential.username $GITLAB_USERNAME"
-sh -c "git config --global core.askPass /cred-helper.sh"
-sh -c "git config --global credential.helper cache"
-sh -c "git remote add mirror $*"
 sh -c "echo pushing to $branch branch at $(git remote get-url --push mirror)"
 sh -c "git push mirror $branch --force"
 
