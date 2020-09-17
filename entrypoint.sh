@@ -18,9 +18,9 @@ urlencode() (
 )
 
 ##################################################################
-DEFAULT_POLL_TIMEOUT=10
+DEFAULT_POLL_TIMEOUT=30
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
-
+echo "${GITHUB_REF}"
 git checkout "${GITHUB_REF:11}"
 
 branch="$(git symbolic-ref --short HEAD)"
