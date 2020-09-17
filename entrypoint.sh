@@ -21,10 +21,21 @@ urlencode() (
 DEFAULT_POLL_TIMEOUT=30
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
-git checkout "${GITHUB_REF#refs\/*/}"
+## check if this was a tag push and react accordingly
+if [ "${GITHUB_REF::11}" = "refs/heads/" ]
+then
+  git checkout "${GITHUB_REF:11}"
+  branch="$(git symbolic-ref --short HEAD)"
+  branch_uri="$(urlencode ${branch})"
+else
+  git checkout "${GITHUB_REF:10}"
+  branch_contains="$(git branch --contains ${GITHUB_REF:5})"
+  branch="$(git symbolic-ref --short ${branch_contains:2})"
+  branch_uri="$(urlencode ${branch})"
+  
+fi
 
-branch="$(git symbolic-ref --short HEAD)"
-branch_uri="$(urlencode ${branch})"
+
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
 sh -c "git config --global core.askPass /cred-helper.sh"
