@@ -29,7 +29,7 @@ then
   branch_uri="$(urlencode ${branch})"
 else
   git checkout "${GITHUB_REF:10}"
-  branch_contains="$(git branch --contains ${GITHUB_REF:5})"
+  branch_contains="$(git branch -a --contains ${GITHUB_REF:10})"
   branch="${branch_contains:2}"
   branch_uri="$(urlencode ${branch})"
   echo "ghref" $GITHUB_REF
