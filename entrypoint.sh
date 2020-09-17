@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -u
+set -e
 ##################################################################
 urlencode() (
     i=1
@@ -21,12 +22,7 @@ urlencode() (
 DEFAULT_POLL_TIMEOUT=30
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
-## check if this was a tag push
-if [ "${GITHUB_REF::11}" = "refs/heads/" ]
-then
-  git checkout "${GITHUB_REF:11}"
-else
-  git checkout "${GITHUB_REF:10}"
+git checkout "${GITHUB_REF#refs\/*/}"
 
 branch="$(git symbolic-ref --short HEAD)"
 branch_uri="$(urlencode ${branch})"
