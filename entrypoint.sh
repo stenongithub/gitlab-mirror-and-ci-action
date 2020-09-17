@@ -28,14 +28,14 @@ then
   branch="$(git symbolic-ref --short HEAD)"
   branch_uri="$(urlencode ${branch})"
 else
+  git checkout "${GITHUB_REF:10}"
   branch_contains="$(git branch --contains ${GITHUB_REF:5})"
   branch="${branch_contains:2}"
   branch_uri="$(urlencode ${branch})"
-  git checkout $branch
-  echo $GITHUB_REF
-  echo $branch
-  echo $branch_contains
-  echo $branch_uri
+  echo "ghref" $GITHUB_REF
+  echo "branch" $branch
+  echo "branchcont" $branch_contains
+  echo "branchuri" $branch_uri
 fi
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
