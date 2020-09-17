@@ -30,7 +30,7 @@ then
 else
   git checkout "${GITHUB_REF:10}"
   branch_contains="$(git branch -a --contains ${GITHUB_REF:10})"
-  branch="${branch_contains:2}"
+  branch="${branch_contains#*remotes\/*/}"
   branch_uri="$(urlencode ${branch})"
   echo "ghref" $GITHUB_REF
   echo "branch" $branch
