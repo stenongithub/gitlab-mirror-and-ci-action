@@ -30,12 +30,9 @@ then
 else
   git checkout "${GITHUB_REF:10}"
   branch_contains="$(git branch --contains ${GITHUB_REF:5})"
-  branch="$(git symbolic-ref --short ${branch_contains:2})"
+  branch="${branch_contains:2}"
   branch_uri="$(urlencode ${branch})"
-  
 fi
-
-
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
 sh -c "git config --global core.askPass /cred-helper.sh"
