@@ -32,6 +32,8 @@ else
   branch_contains="$(git branch --contains ${GITHUB_REF:5})"
   branch="${branch_contains:2}"
   branch_uri="$(urlencode ${branch})"
+  echo branch
+  echo branch_uri
 fi
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
