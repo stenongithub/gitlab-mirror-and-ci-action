@@ -27,15 +27,13 @@ then
   git checkout "${GITHUB_REF:11}"
   branch="$(git symbolic-ref --short HEAD)"
   branch_uri="$(urlencode ${branch})"
+  pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri}" | jq '.last_pipeline.id')
 else
   git checkout "${GITHUB_REF:10}"
   branch_contains="$(git branch -a --contains ${GITHUB_REF:10})"
-  branch="${branch_contains#*remotes\/*/}"
+  branch="${branch_contains#*remotes\/}"
   branch_uri="$(urlencode ${branch})"
-  echo "ghref" $GITHUB_REF
-  echo "branch" $branch
-  echo "branchcont" $branch_contains
-  echo "branchuri" $branch_uri
+  pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/tags/${GITHUB_REF:10}" | jq '.last_pipeline.id')
 fi
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
@@ -46,8 +44,6 @@ sh -c "echo pushing to $branch branch at $(git remote get-url --push mirror)"
 sh -c "git push mirror $branch --force"
 
 sleep $POLL_TIMEOUT
-
-pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri}" | jq '.last_pipeline.id')
 
 if [ "${pipeline_id}" = "null" ]
 then
