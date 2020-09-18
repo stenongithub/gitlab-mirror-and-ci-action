@@ -1,4 +1,6 @@
-FROM makocchi/alpine-git-curl-jq:latest
+FROM alpine:latest
+
+RUN apk add git curl jq
 
 LABEL "com.github.actions.name"="Mirror to GitLab and run GitLab CI"
 LABEL "com.github.actions.description"="Automate mirroring of git commits to GitLab, trigger GitLab CI and post results back to GitHub"
