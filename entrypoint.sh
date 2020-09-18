@@ -31,6 +31,7 @@ then
   pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri}" | jq '.last_pipeline.id')
 else
   # try switching back to the parent branch out of detached head
+  sh -c "git --version"
   sh -c "git switch -"
   sh -c "echo github_ref: $GITHUB_REF"
   branch_contains="$(git branch -a --contains ${GITHUB_REF:5})" # which branches have this tag?
