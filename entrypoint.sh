@@ -30,13 +30,14 @@ then
   branch_uri="$(urlencode ${branch})"
   pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri}" | jq '.last_pipeline.id')
 else
-  branch_contains="$(git branch -a --contains ${GITHUB_REF:10})" # which branches have this tag?
+  branch_contains="$(git branch -a --contains ${GITHUB_REF:5})" # which branches have this tag?
+  echo "branch_contains:" $branch_contains
   branch_origin="${branch_contains#*remotes\/}" # select origin branch
   git checkout "$branch_origin"
   branch="${branch_contains#*remotes\/*/}" # select origin branch excluding "origin"
-  echo $branch
+  echo "branch: "$branch
   branch_uri="$(urlencode ${branch})" # encode branch for URL
-  echo $branch_uri
+  echo "branch_uri:" $branch_uri
   pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/trigger/pipeline?ref=${GITHUB_REF:10}" | jq '.last_pipeline.id')
 fi
 
