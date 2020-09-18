@@ -21,11 +21,6 @@ urlencode() (
 DEFAULT_POLL_TIMEOUT=30
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
-sh -c "git config --global credential.username $GITLAB_USERNAME"
-sh -c "git config --global core.askPass /cred-helper.sh"
-sh -c "git config --global credential.helper cache"
-sh -c "git remote add mirror $*"
-
 ## check if this was a tag push and react accordingly
 
 if [ "${GITHUB_REF::11}" = "refs/heads/" ]
@@ -35,14 +30,20 @@ then
   branch_uri="$(urlencode ${branch})"
   pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/repository/commits/${branch_uri}" | jq '.last_pipeline.id')
 else
-  branch_contains="$(git branch -a --contains ${GITHUB_REF:10})"
-  branch_origin="${branch_contains#*remotes\/}"
-  git checkout "$branch_origin" && git pull
-  branch="${branch_contains#*remotes\/*/}"
-  branch_uri="$(urlencode ${branch})"
+  branch_contains="$(git branch -a --contains ${GITHUB_REF:10})" # which branches have this tag?
+  branch_origin="${branch_contains#*remotes\/}" # select origin branch
+  git checkout "$branch_origin"
+  branch="${branch_contains#*remotes\/*/}" # select origin branch excluding "origin"
+  branch_uri="$(urlencode ${branch})" # encode branch for URL
   pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/trigger/pipeline?ref=${GITHUB_REF:10}" | jq '.last_pipeline.id')
 fi
 
+echo "configuring git"
+sh -c "git config --global credential.username $GITLAB_USERNAME"
+sh -c "git config --global core.askPass /cred-helper.sh"
+sh -c "git config --global credential.helper cache"
+echo "adding git remote mirror"
+sh -c "git remote add mirror $*"
 sh -c "echo pushing to $branch branch at $(git remote get-url --push mirror)"
 sh -c "git push mirror $branch --force"
 
