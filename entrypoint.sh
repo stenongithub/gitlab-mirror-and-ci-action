@@ -34,7 +34,9 @@ else
   branch_origin="${branch_contains#*remotes\/}" # select origin branch
   git checkout "$branch_origin"
   branch="${branch_contains#*remotes\/*/}" # select origin branch excluding "origin"
+  echo $branch
   branch_uri="$(urlencode ${branch})" # encode branch for URL
+  echo $branch_uri
   pipeline_id=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/trigger/pipeline?ref=${GITHUB_REF:10}" | jq '.last_pipeline.id')
 fi
 
