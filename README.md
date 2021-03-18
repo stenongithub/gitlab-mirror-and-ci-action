@@ -34,6 +34,11 @@ Be sure to define the `GITLAB_PASSWORD` secret.
 
 ## Changelog
 
+0.2.8 (2021-03-18)
+------------------
+
+Fixed forwarding of git tags.
+
 0.2.5 (2020-06-30)
 ------------------
 
