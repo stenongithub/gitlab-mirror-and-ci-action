@@ -21,6 +21,7 @@ urlencode() (
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
+echo "GITHUB_REF: ${GITHUB_REF:11}}
 git checkout "${GITHUB_REF:11}"
 
 if $(git symbolic-ref -q HEAD); then
