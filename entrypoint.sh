@@ -21,14 +21,15 @@ urlencode() (
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
-echo "GITHUB_REF: ${GITHUB_REF}" > /dev/stderr
-git checkout "${GITHUB_REF:11}"
+case "${GITHUB_REF}" in
+    refs/tags/*)
+        git checkout "${GITHUB_REF:10}"
+        branch="$(git describe --exact-match --tags $(git log -n1 --pretty='%h'))";;
+    *)
+        git checkout "${GITHUB_REF:11}"
+        branch="$(git symbolic-ref --short HEAD)";;
+esac
 
-if $(git symbolic-ref -q HEAD); then
-    branch="$(git symbolic-ref --short HEAD)"
-else
-    branch="$(git describe --exact-match --tags $(git log -n1 --pretty='%h'))"
-fi
 branch_uri="$(urlencode ${branch})"
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
