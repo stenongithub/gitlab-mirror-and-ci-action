@@ -21,14 +21,9 @@ urlencode() (
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
 
-echo "GITHUB_REF: ${GITHUB_REF:11}}" > /dev/stderr
 git checkout "${GITHUB_REF:11}"
 
-if $(git symbolic-ref -q HEAD); then
-    branch="$(git symbolic-ref --short HEAD)"
-else
-    branch="$(git describe --exact-match --tags $(git log -n1 --pretty='%h'))"
-fi
+branch="$(git symbolic-ref --short HEAD)"
 branch_uri="$(urlencode ${branch})"
 
 sh -c "git config --global credential.username $GITLAB_USERNAME"
