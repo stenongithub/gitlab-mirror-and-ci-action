@@ -20,6 +20,9 @@ urlencode() (
 ##################################################################
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
+GREEN='[32;1m'
+RED='[1;31m'
+RESET='[0m'
 
 case "${GITHUB_REF}" in
     refs/tags/*)
@@ -55,39 +58,58 @@ echo "Triggered CI for branch ${branch}"
 echo "Working with pipeline id #${pipeline_id}"
 echo "Poll timeout set to ${POLL_TIMEOUT}"
 
-ci_status="pending"
-
+ci_status='pending'
+prev_job_status=''
 until [[ "$ci_status" != "pending" && "$ci_status" != "running" ]]
 do
-   sleep $POLL_TIMEOUT
-   ci_output=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/${pipeline_id}")
-   ci_status=$(jq -n "$ci_output" | jq -r .status)
-   ci_web_url=$(jq -n "$ci_output" | jq -r .web_url)
-   
-   echo "Current pipeline status: ${ci_status}"
-   if [ "$ci_status" = "running" ]
-   then
-     echo "Checking pipeline status..."
-     curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null 
-   fi
+    sleep $POLL_TIMEOUT
+    ci_output=$(curl --header "PRIVATE-TOKEN: $GITLAB_PASSWORD" --silent "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/${pipeline_id}")
+    ci_status=$(jq -n "$ci_output" | jq -r .status)
+    ci_web_url=$(jq -n "$ci_output" | jq -r .web_url)
+
+    echo "Current pipeline status: ${ci_status}"
+    if [ "$ci_status" = "running" ]
+    then
+	job_status=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
+			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" | \
+			 jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r"')
+	if test "${job_status}" != "${prev_job_status}"; then
+	    echo "${GREEN}${job_status}${RESET}"
+	    prev_job_status="${job_status}"
+	fi
+	curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null
+    fi
 done
 
 echo "Pipeline finished with status ${ci_status}"
-  
+
 if [ "$ci_status" = "success" ]
-then 
-  curl -d '{"state":"success", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" 
-  exit 0
+then
+    curl -d '{"state":"success", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"
+    exit 0
 elif [ "$ci_status" = "manual" ] # do not return non-triggered manual builds as a CI failure
-then 
-  curl -d '{"state":"success", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" 
-  exit 0
+then
+    curl -d '{"state":"success", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"
+    exit 0
 elif [ "$ci_status" = "failed" ]
-then 
-  curl -d '{"state":"failure", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" 
-  exit 1
+then
+    curl -d '{"state":"failure", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"
+    # retrieve logs for all failed jobs
+    FAILED_JOBS=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
+		      -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" |
+		      jq '.[] | select(.status == "failed") | .id')
+    i=0
+    for job_id in $FAILED_JOBS; do
+	JOB=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}")
+	cat<<-EOF
+	${RED}*** Job $i $(echo $JOB | jq '.stage + "/" + .name') failed${RESET}
+	$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}/trace")
+EOF
+        i=$((i +  1))
+    done
+    exit 1
 else # no return value, so there's no target URL either
-  echo "Pipeline ended without a ci_status: https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/${pipeline_id}"
-  curl -d '{"state":"failure", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"
-  exit 1
+    echo "Pipeline ended without a ci_status: https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/${pipeline_id}"
+    curl -d '{"state":"failure", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"
+    exit 1
 fi
