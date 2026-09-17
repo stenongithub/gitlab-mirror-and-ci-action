@@ -34,15 +34,20 @@ Be sure to define the `GITLAB_PASSWORD` secret.
 
 ## Changelog
 
-0.2.8 (2021-03-18)
+0.3.1 (2020-09-17)
 ------------------
 
-Fixed forwarding of git tags.
+Diabled debug prints
 
 0.3.0 (2020-09-17)
 ------------------
 
 Added information on job status and logs for failed jobs.
+
+0.2.8 (2021-03-18)
+------------------
+
+Fixed forwarding of git tags.
 
 0.2.5 (2020-06-30)
 ------------------
