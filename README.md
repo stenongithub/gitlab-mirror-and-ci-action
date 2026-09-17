@@ -39,6 +39,11 @@ Be sure to define the `GITLAB_PASSWORD` secret.
 
 Fixed forwarding of git tags.
 
+0.3.0 (2020-09-17)
+------------------
+
+Added information on job status and logs for failed jobs.
+
 0.2.5 (2020-06-30)
 ------------------
 
