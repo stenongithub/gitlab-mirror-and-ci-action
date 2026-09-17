@@ -20,7 +20,7 @@ urlencode() (
 ##################################################################
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
-YELLOW='[33m'
+GREEN='[32;1m'
 RED='[1;31m'
 RESET='[0m'
 
@@ -74,10 +74,9 @@ do
 			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" | \
 			 jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r"')
 	if test "${job_status}" != "${prev_job_status}"; then
-	    echo "${YELLOW}${job_status}${RESET}"
+	    echo "${GREEN}${job_status}${RESET}"
 	    prev_job_status="${job_status}"
 	fi
-EOF
 	curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null
     fi
 done
