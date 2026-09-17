@@ -20,9 +20,9 @@ urlencode() (
 ##################################################################
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
-YELLOW='\033[33m'
-RED='\033[1;31m'
-RESET='\033[0m'
+YELLOW='[33m'
+RED='[1;31m'
+RESET='[0m'
 
 case "${GITHUB_REF}" in
     refs/tags/*)
@@ -69,10 +69,13 @@ do
     echo "Current pipeline status: ${ci_status}"
     if [ "$ci_status" = "running" ]
     then
-	cat<<-EOF
-		${YELLOW}[33m$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
+	job_status=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
 			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" | \
-			jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r"')${RESET}
+			 jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r"')
+	if test "${job_status}" != "${prev_job_status}"; then
+	    echo "${YELLOW}${job_status}${RESET}"
+	    prev_job_status="${job_status}"
+	fi
 EOF
 	curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null
     fi
