@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -ux
 ##################################################################
@@ -68,7 +68,7 @@ do
     then
 	cat<<-EOF
 		$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
-			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$PIPELINE_ID/jobs" | \
+			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" | \
 			jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r")
 EOF
 	curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null
@@ -89,7 +89,9 @@ elif [ "$ci_status" = "failed" ]
 then
     curl -d '{"state":"failure", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"
     # retrieve logs for all failed jobs
-    FAILED_JOBS=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$PIPELINE_ID/jobs" | jq '.[] | select(.status=="failed") | .id' )
+    FAILED_JOBS=`curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
+		      -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" |
+		      jq '.[] | select(.status == "failed") | .id' `
     i=0
     for job_id in $FAILED_JOBS; do
 	JOB=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}")
