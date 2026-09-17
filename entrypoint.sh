@@ -69,7 +69,7 @@ do
 	cat<<-EOF
 		$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
 			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" | \
-			jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r")
+			jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r"' )
 EOF
 	curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null
     fi
@@ -89,9 +89,9 @@ elif [ "$ci_status" = "failed" ]
 then
     curl -d '{"state":"failure", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"
     # retrieve logs for all failed jobs
-    FAILED_JOBS=`curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
+    FAILED_JOBS=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
 		      -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" |
-		      jq '.[] | select(.status == "failed") | .id' `
+		      jq '.[] | select(.status == "failed") | .id')
     i=0
     for job_id in $FAILED_JOBS; do
 	JOB=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}")
@@ -99,7 +99,7 @@ then
 	*** Job $i $(echo $JOB | jq '.stage + "/" + .name') failed
 	$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}/trace")
 EOF
-	let ++i
+        i=$((i +  1))
     done
     exit 1
 else # no return value, so there's no target URL either
