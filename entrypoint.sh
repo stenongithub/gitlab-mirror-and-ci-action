@@ -20,6 +20,9 @@ urlencode() (
 ##################################################################
 DEFAULT_POLL_TIMEOUT=10
 POLL_TIMEOUT=${POLL_TIMEOUT:-$DEFAULT_POLL_TIMEOUT}
+YELLOW='\033[33m'
+RED='\033[1;31m'
+RESET='\033[0m'
 
 case "${GITHUB_REF}" in
     refs/tags/*)
@@ -67,9 +70,9 @@ do
     if [ "$ci_status" = "running" ]
     then
 	cat<<-EOF
-		$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
+		${YELLOW}[33m$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
 			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$pipeline_id/jobs" | \
-			jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r"' )
+			jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r"')${RESET}
 EOF
 	curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null
     fi
@@ -96,7 +99,7 @@ then
     for job_id in $FAILED_JOBS; do
 	JOB=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}")
 	cat<<-EOF
-	*** Job $i $(echo $JOB | jq '.stage + "/" + .name') failed
+	${RED}*** Job $i $(echo $JOB | jq '.stage + "/" + .name') failed${RESET}
 	$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}/trace")
 EOF
         i=$((i +  1))
