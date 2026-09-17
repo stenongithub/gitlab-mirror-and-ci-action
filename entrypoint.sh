@@ -56,7 +56,6 @@ echo "Working with pipeline id #${pipeline_id}"
 echo "Poll timeout set to ${POLL_TIMEOUT}"
 
 ci_status="pending"
-
 until [[ "$ci_status" != "pending" && "$ci_status" != "running" ]]
 do
     sleep $POLL_TIMEOUT
@@ -67,7 +66,11 @@ do
     echo "Current pipeline status: ${ci_status}"
     if [ "$ci_status" = "running" ]
     then
-	echo "Checking pipeline status..."
+	cat<<-EOF
+		$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" \
+			-s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/$PIPELINE_ID/jobs" | \
+			jq -r 'reverse | .[] | .stage + "/" + .name + ": " + .status + "\r")
+EOF
 	curl -d '{"state":"pending", "target_url": "'${ci_web_url}'", "context": "gitlab-ci"}' -H "Authorization: token ${GITHUB_TOKEN}"  -H "Accept: application/vnd.github.antiope-preview+json" -X POST --silent "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}"  > /dev/null
     fi
 done
@@ -94,8 +97,8 @@ then
 	JOB=$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}")
 	cat<<-EOF
 	*** Job $i "$(echo $JOB | jq '.stage + "/" + .name')" failed
-	$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}/trace)
-	EOF
+	$(curl -H "PRIVATE-TOKEN: $GITLAB_PASSWORD" -s "https://${GITLAB_HOSTNAME}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${job_id}/trace")
+EOF
 	let ++i
     done
     exit 1
